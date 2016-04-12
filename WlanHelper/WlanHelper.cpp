@@ -41,7 +41,7 @@ UINT EnumInterface(HANDLE hClient, WLAN_INTERFACE_INFO sInfo[64])
 			hClient,
 			NULL,               // reserved
 			&pIntfList
-		)) != ERROR_SUCCESS)
+			)) != ERROR_SUCCESS)
 		{
 			__leave;
 		}
@@ -68,7 +68,7 @@ UINT EnumInterface(HANDLE hClient, WLAN_INTERFACE_INFO sInfo[64])
 // open a WLAN client handle and check version
 DWORD
 OpenHandleAndCheckVersion(
-	PHANDLE phClient
+PHANDLE phClient
 )
 {
 	DWORD dwError = ERROR_SUCCESS;
@@ -85,7 +85,7 @@ OpenHandleAndCheckVersion(
 			NULL,               // reserved
 			&dwServiceVersion,
 			&hClient
-		)) != ERROR_SUCCESS)
+			)) != ERROR_SUCCESS)
 		{
 			__leave;
 		}
@@ -110,7 +110,7 @@ OpenHandleAndCheckVersion(
 			WlanCloseHandle(
 				hClient,
 				NULL            // reserved
-			);
+				);
 		}
 	}
 
