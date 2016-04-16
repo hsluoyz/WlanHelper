@@ -1,4 +1,4 @@
-// WlanTest.cpp : Defines the entry point for the console application.
+// WlanHelper.cpp : Defines the entry point for the console application.
 //
 
 // #include "stdafx.h"
@@ -13,7 +13,7 @@
 
 #define WLAN_CLIENT_VERSION_VISTA 2
 
-void SetInterface(WLAN_INTF_OPCODE opcode, PVOID* pData, GUID* InterfaceGuid)
+DWORD SetInterface(WLAN_INTF_OPCODE opcode, PVOID* pData, GUID* InterfaceGuid)
 {
 	DWORD dwResult = 0;
 	HANDLE hClient = NULL;
@@ -25,6 +25,7 @@ void SetInterface(WLAN_INTF_OPCODE opcode, PVOID* pData, GUID* InterfaceGuid)
 	dwResult = WlanSetInterface(hClient, InterfaceGuid, opcode, sizeof(ULONG), pData, NULL);
 	WlanCloseHandle(hClient, NULL);
 
+	return dwResult;
 }
 
 // enumerate wireless interfaces
@@ -222,7 +223,7 @@ int main()
 	{
 		targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
 	}
-	if (nSTate == 1)
+	else if (nSTate == 1)
 	{
 		targetOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
 	}
@@ -231,7 +232,16 @@ int main()
 		targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_AP;
 	}
 
-	SetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&targetOperationMode, &sInfo[nChoice].InterfaceGuid);
+	DWORD dwResult = SetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&targetOperationMode, &sInfo[nChoice].InterfaceGuid);
+	if (dwResult != ERROR_SUCCESS)
+	{
+		printf("SetInterface error, error code = %d\n", dwResult);
+		system("PAUSE");
+	}
+	else
+	{
+		printf("SetInterface success!\n");
+	}
 
 	return 0;
 }
