@@ -236,7 +236,7 @@ GetInterfaceOperationModeString(__in ULONG wlanInterfaceOperationMode)
 	return strRetCode;
 }
 
-int main()
+int MainInteractive()
 {
 	HANDLE hClient = NULL;
 	WLAN_INTERFACE_INFO sInfo[64];
@@ -298,7 +298,7 @@ int main()
 
 	TCHAR buf[256];
 	_stprintf_s(buf, 256, _T("{%s}"), szBuffer);
-	
+
 	if (dwRead > 32)
 	{
 		if (myGUIDFromString(buf, &ChoiceGUID) != TRUE)
@@ -306,10 +306,10 @@ int main()
 			printf("UuidFromString error, error code = %d\n", -1);
 			system("PAUSE");
 		}
-	else
-	{
-		pChoiceGUID = &ChoiceGUID;
-	}
+		else
+		{
+			pChoiceGUID = &ChoiceGUID;
+		}
 	}
 	else
 	{
@@ -367,6 +367,38 @@ int main()
 	else
 	{
 		printf("SetInterface success!\n");
+	}
+
+	return 0;
+}
+
+#define STR_COMMAND_USAGE _T("Command Usage:\nWlanHelper {Interface Name} mode [*null*|managed|monitor]\n*null* - get interface mode\nmanaged - set interface mode to managed mode (aka ExtSTA)\nmonitor - set interface mode to monitor mode (aka NetMon)\n")
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	SetConsoleTitle(_T("WlanHelper Tool for Npcap [www.npcap.org]"));
+	
+	if (argc == 1)
+	{
+		printf("WlanHelper [Interactive Mode]:\n****************************************************\n");
+		return MainInteractive();
+	}
+	else if (argc == 2)
+	{
+		if (_tcscmp(_T("-h"), argv[1]) == 0)
+		{
+			_tprintf(STR_COMMAND_USAGE);
+			return -1;
+		}
+	}
+	else if (argc == 3)
+	{
+
+	}
+	else
+	{
+		printf("Error: too many parameters.\n");
+		return -1;
 	}
 
 	return 0;
