@@ -202,8 +202,8 @@ int main()
 	UINT nSTate = 0;
 	//ULONG targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
 	ULONG targetOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
-	printf("Enter the state (0 or 1) you want to switch to for the chosen wireless card:\n");
-	printf("0: ExtSTA mode, 1: Monitor mode.\n");
+	printf("Enter the state (0, 1 or 2) you want to switch to for the chosen wireless card:\n");
+	printf("0: Managed Mode (ExtSTA)\n1: Monitor Mode (NetMon)\n2: Master Mode (ExtAP)\n");
 
 	if (ReadConsole(GetStdHandle(STD_INPUT_HANDLE), szBuffer, _countof(szBuffer), &dwRead, NULL) == FALSE)
 	{
@@ -213,18 +213,22 @@ int main()
 	szBuffer[dwRead] = 0;
 	nSTate = _ttoi(szBuffer);
 
-	if (nSTate != 0 && nSTate != 1)
+	if (nSTate != 0 && nSTate != 1 && nSTate != 2)
 	{
-		puts("Only 0 and 1 are valid inputs.");
+		puts("Only 0, 1 and 2 are valid inputs.");
 		return -1;
 	}
 	if (nSTate == 0)
 	{
 		targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
 	}
-	else
+	if (nSTate == 1)
 	{
 		targetOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
+	}
+	else // nSTate == 2
+	{
+		targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_AP;
 	}
 
 	SetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&targetOperationMode, &sInfo[nChoice].InterfaceGuid);
