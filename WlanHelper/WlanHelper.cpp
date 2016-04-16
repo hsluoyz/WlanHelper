@@ -372,6 +372,17 @@ int MainInteractive()
 	return 0;
 }
 
+BOOL GetWlanOperationMode(TCHAR *strGUID, TCHAR *strMode)
+{
+	_tcscpy_s(strMode, 256, _T("test"));
+	return TRUE;
+}
+
+BOOL SetWlanOperationMode(TCHAR *strGUID, TCHAR *strMode)
+{
+	return TRUE;
+}
+
 #define STR_COMMAND_USAGE _T("Command Usage:\nWlanHelper {Interface Name} mode [*null*|managed|monitor]\n*null* - get interface mode\nmanaged - set interface mode to managed mode (aka ExtSTA)\nmonitor - set interface mode to monitor mode (aka NetMon)\n")
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -380,7 +391,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	if (argc == 1)
 	{
-		printf("WlanHelper [Interactive Mode]:\n****************************************************\n");
+		_tprintf(_T("WlanHelper [Interactive Mode]:\n****************************************************\n"));
 		return MainInteractive();
 	}
 	else if (argc == 2)
@@ -390,14 +401,66 @@ int _tmain(int argc, _TCHAR* argv[])
 			_tprintf(STR_COMMAND_USAGE);
 			return -1;
 		}
+		else
+		{
+			_tprintf(_T("Error: invalid parameter, type in \"WlanHelper -h\" for help.\n"));
+			return -1;
+		}
 	}
 	else if (argc == 3)
 	{
-
+		if (_tcscmp(_T("mode"), argv[2]) != 0)
+		{
+			_tprintf(_T("Error: invalid parameter, type in \"WlanHelper -h\" for help.\n"));
+			return -1;
+		}
+		else
+		{
+			TCHAR buf[256];
+			if (GetWlanOperationMode(argv[1], buf))
+			{
+				_tprintf(("%s\n", buf));
+				return 0;
+			}
+			else
+			{
+				_tprintf(_T("Error: SetInterface error\n"));
+				return -1;
+			}
+		}
+	}
+	else if (argc == 4)
+	{
+		if (_tcscmp(_T("mode"), argv[2]) != 0)
+		{
+			_tprintf(_T("Error: invalid parameter, type in \"WlanHelper -h\" for help.\n"));
+			return -1;
+		}
+		else
+		{
+			if (_tcscmp(_T("managed"), argv[3]) != 0 && _tcscmp(_T("monitor"), argv[3]) != 0)
+			{
+				_tprintf(_T("Error: invalid parameter, type in \"WlanHelper -h\" for help.\n"));
+				return -1;
+			}
+			else
+			{
+				if (SetWlanOperationMode(argv[1], argv[3]))
+				{
+					_tprintf(_T("Success\n"));
+					return 0;
+				}
+				else
+				{
+					_tprintf(_T("Failure\n"));
+					return -1;
+				}
+			}
+		}
 	}
 	else
 	{
-		printf("Error: too many parameters.\n");
+		_tprintf(_T("Error: too many parameters.\n"));
 		return -1;
 	}
 
