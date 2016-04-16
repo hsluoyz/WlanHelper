@@ -374,13 +374,87 @@ int MainInteractive()
 
 BOOL GetWlanOperationMode(TCHAR *strGUID, TCHAR *strMode)
 {
-	_tcscpy_s(strMode, 256, _T("test"));
+	TCHAR buf[256];
+	_stprintf_s(buf, 256, _T("{%s}"), strGUID);
+
+	GUID ChoiceGUID;
+	if (myGUIDFromString(buf, &ChoiceGUID) != TRUE)
+	{
+		_tprintf(_T("Error: UuidFromString error, error code = %d\n"), -1);
+		return FALSE;
+	}
+
+	ULONG ulOperationMode = -1;
+	PULONG pOperationMode;
+	DWORD dwResult = GetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&pOperationMode, &ChoiceGUID);
+	if (dwResult != ERROR_SUCCESS)
+	{
+		_tprintf(_T("Error: GetInterface error, error code = %d\n"), dwResult);
+		return FALSE;
+	}
+	else
+	{
+		ulOperationMode = *pOperationMode;
+		WlanFreeMemory(pOperationMode);
+	}
+
+	if (ulOperationMode == DOT11_OPERATION_MODE_EXTENSIBLE_STATION)
+	{
+		_tcscpy_s(strMode, 256, _T("managed"));
+	}
+	else if (ulOperationMode == DOT11_OPERATION_MODE_NETWORK_MONITOR)
+	{
+		_tcscpy_s(strMode, 256, _T("monitor"));
+	}
+	else if (ulOperationMode == DOT11_OPERATION_MODE_EXTENSIBLE_AP)
+	{
+		_tcscpy_s(strMode, 256, _T("master"));
+	}
+	else
+	{
+		_tcscpy_s(strMode, 256, _T("unknown mode"));
+	}
+	
 	return TRUE;
 }
 
 BOOL SetWlanOperationMode(TCHAR *strGUID, TCHAR *strMode)
 {
-	return TRUE;
+	TCHAR buf[256];
+	_stprintf_s(buf, 256, _T("{%s}"), strGUID);
+
+	GUID ChoiceGUID;
+	if (myGUIDFromString(buf, &ChoiceGUID) != TRUE)
+	{
+		_tprintf(_T("Error: UuidFromString error, error code = %d\n"), -1);
+		return FALSE;
+	}
+
+	ULONG ulOperationMode;
+	if (_tcscmp(_T("managed"), strMode) == 0)
+	{
+		ulOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
+	}
+	else if (_tcscmp(_T("monitor"), strMode) == 0)
+	{
+		ulOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
+	}
+	else
+	{
+		_tprintf(_T("Error: SetWlanOperationMode error, unknown mode: %s\n"), strMode);
+		return FALSE;
+	}
+
+	DWORD dwResult = SetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&ulOperationMode, &ChoiceGUID);
+	if (dwResult != ERROR_SUCCESS)
+	{
+		_tprintf(_T("Error: SetInterface error, error code = %d\n"), dwResult);
+		return FALSE;
+	}
+	else
+	{
+		return TRUE;
+	}
 }
 
 #define STR_COMMAND_USAGE _T("Command Usage:\nWlanHelper {Interface Name} mode [*null*|managed|monitor]\n*null* - get interface mode\nmanaged - set interface mode to managed mode (aka ExtSTA)\nmonitor - set interface mode to monitor mode (aka NetMon)\n")
