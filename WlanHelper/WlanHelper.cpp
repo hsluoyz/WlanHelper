@@ -11,6 +11,45 @@
 #include <windows.h>
 #include <wlanapi.h>
 
+// MAKEINTRESOURCE() returns an LPTSTR, but GetProcAddress()
+// expects LPSTR even in UNICODE, so using MAKEINTRESOURCEA()...
+#ifdef UNICODE
+#define MAKEINTRESOURCEA_T(a, u) MAKEINTRESOURCEA(u)
+#else
+#define MAKEINTRESOURCEA_T(a, u) MAKEINTRESOURCEA(a)
+#endif
+
+BOOL myGUIDFromString(LPCTSTR psz, LPGUID pguid)
+{
+	BOOL bRet = FALSE;
+
+	typedef BOOL(WINAPI *LPFN_GUIDFromString)(LPCTSTR, LPGUID);
+	LPFN_GUIDFromString pGUIDFromString = NULL;
+
+	HINSTANCE hInst = LoadLibrary(TEXT("shell32.dll"));
+	if (hInst)
+	{
+		pGUIDFromString = (LPFN_GUIDFromString)GetProcAddress(hInst, MAKEINTRESOURCEA_T(703, 704));
+		if (pGUIDFromString)
+			bRet = pGUIDFromString(psz, pguid);
+		FreeLibrary(hInst);
+	}
+
+	if (!pGUIDFromString)
+	{
+		hInst = LoadLibrary(TEXT("Shlwapi.dll"));
+		if (hInst)
+		{
+			pGUIDFromString = (LPFN_GUIDFromString)GetProcAddress(hInst, MAKEINTRESOURCEA_T(269, 270));
+			if (pGUIDFromString)
+				bRet = pGUIDFromString(psz, pguid);
+			FreeLibrary(hInst);
+		}
+	}
+
+	return bRet;
+}
+
 #define WLAN_CLIENT_VERSION_VISTA 2
 
 DWORD SetInterface(WLAN_INTF_OPCODE opcode, PVOID* pData, GUID* InterfaceGuid)
@@ -206,14 +245,17 @@ int main()
 	TCHAR szBuffer[256];
 	DWORD dwRead;
 	if (OpenHandleAndCheckVersion(&hClient) != ERROR_SUCCESS)
+	{
+		system("PAUSE");
 		return -1;
+	}
 
 	UINT nCount = EnumInterface(hClient, sInfo);
 	for (UINT i = 0; i < nCount; ++i)
 	{
 		if (UuidToStringA(&sInfo[i].InterfaceGuid, &strGuid) == RPC_S_OK)
 		{
-			ULONG OperationMode = -1;
+			ULONG ulOperationMode = -1;
 			PULONG pOperationMode;
 			DWORD dwResult = GetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&pOperationMode, &sInfo[i].InterfaceGuid);
 			if (dwResult != ERROR_SUCCESS)
@@ -223,7 +265,7 @@ int main()
 			}
 			else
 			{
-				OperationMode = *pOperationMode;
+				ulOperationMode = *pOperationMode;
 				WlanFreeMemory(pOperationMode);
 			}
 
@@ -232,38 +274,66 @@ int main()
 				strGuid,
 				sInfo[i].strInterfaceDescription,
 				GetInterfaceStateString(sInfo[i].isState),
-				GetInterfaceOperationModeString(OperationMode));
+				GetInterfaceOperationModeString(ulOperationMode));
 
 			RpcStringFreeA(&strGuid);
 		}
 	}
 
 	UINT nChoice = 0;
+	GUID ChoiceGUID;
+	LPGUID pChoiceGUID = NULL;
 	printf("Enter the choice (0, 1,..) of the wireless card you want to operate on:\n");
 
 	if (ReadConsole(GetStdHandle(STD_INPUT_HANDLE), szBuffer, _countof(szBuffer), &dwRead, NULL) == FALSE)
 	{
 		puts("Error input.");
+		system("PAUSE");
 		return -1;
 	}
 	szBuffer[dwRead] = 0;
-	nChoice = _ttoi(szBuffer);
 
-	if (nChoice > nCount)
+	// TCHAR *aaa = _T("42dfd47a-2764-43ac-b58e-3df569c447da");
+	// dwRead = sizeof(aaa);
+
+	TCHAR buf[256];
+	_stprintf_s(buf, 256, _T("{%s}"), szBuffer);
+	
+	if (dwRead > 32)
 	{
-		puts("No such index.");
-		return -1;
+		if (myGUIDFromString(buf, &ChoiceGUID) != TRUE)
+		{
+			printf("UuidFromString error, error code = %d\n", -1);
+			system("PAUSE");
+		}
+	else
+	{
+		pChoiceGUID = &ChoiceGUID;
+	}
+	}
+	else
+	{
+		nChoice = _ttoi(szBuffer);
+
+		if (nChoice > nCount)
+		{
+			puts("No such index.");
+			system("PAUSE");
+			return -1;
+		}
+
+		pChoiceGUID = &sInfo[nChoice].InterfaceGuid;
 	}
 
 	UINT nSTate = 0;
-	//ULONG targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
-	ULONG targetOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
+	ULONG ulOperationMode = -1;
 	printf("Enter the operation mode (0, 1 or 2) you want to switch to for the chosen wireless card:\n");
 	printf("0: Extensible Station (ExtSTA)\n1: Network Monitor (NetMon)\n2: Extensible Access Point (ExtAP)\n");
 
 	if (ReadConsole(GetStdHandle(STD_INPUT_HANDLE), szBuffer, _countof(szBuffer), &dwRead, NULL) == FALSE)
 	{
 		puts("Error input.");
+		system("PAUSE");
 		return -1;
 	}
 	szBuffer[dwRead] = 0;
@@ -272,22 +342,23 @@ int main()
 	if (nSTate != 0 && nSTate != 1 && nSTate != 2)
 	{
 		puts("Only 0, 1 and 2 are valid inputs.");
+		system("PAUSE");
 		return -1;
 	}
 	if (nSTate == 0)
 	{
-		targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
+		ulOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_STATION;
 	}
 	else if (nSTate == 1)
 	{
-		targetOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
+		ulOperationMode = DOT11_OPERATION_MODE_NETWORK_MONITOR;
 	}
 	else // nSTate == 2
 	{
-		targetOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_AP;
+		ulOperationMode = DOT11_OPERATION_MODE_EXTENSIBLE_AP;
 	}
 
-	DWORD dwResult = SetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&targetOperationMode, &sInfo[nChoice].InterfaceGuid);
+	DWORD dwResult = SetInterface(wlan_intf_opcode_current_operation_mode, (PVOID*)&ulOperationMode, pChoiceGUID);
 	if (dwResult != ERROR_SUCCESS)
 	{
 		printf("SetInterface error, error code = %d\n", dwResult);
