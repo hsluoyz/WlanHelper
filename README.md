@@ -35,6 +35,30 @@ monitor - set interface mode to monitor mode (aka NetMon)
 An example:
 
 ```
+C:\>netsh wlan show interfaces
+
+There is 1 interface on the system:
+
+    Name                   : Wi-Fi
+    Description            : Qualcomm Atheros AR9485WB-EG Wireless Network Adapter
+    GUID                   : 42dfd47a-2764-43ac-b58e-3df569c447da
+    Physical address       : a4:db:30:d9:3a:9a
+    State                  : connected
+    SSID                   : LUO-PC_Network
+    BSSID                  : d8:15:0d:72:8c:18
+    Network type           : Infrastructure
+    Radio type             : 802.11n
+    Authentication         : WPA2-Personal
+    Cipher                 : CCMP
+    Connection mode        : Auto Connect
+    Channel                : 1
+    Receive rate (Mbps)    : 150
+    Transmit rate (Mbps)   : 150
+    Signal                 : 100%
+    Profile                : LUO-PC_Network
+
+    Hosted network status  : Not available
+
 C:\>WlanHelper.exe 42dfd47a-2764-43ac-b58e-3df569c447da mode
 managed
 C:\>WlanHelper.exe 42dfd47a-2764-43ac-b58e-3df569c447da mode monitor
